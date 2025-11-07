@@ -75,25 +75,33 @@ TWILIO_PHONE_NUMBER="+1234567890"
 
 ## 💻 Setup & Run
 ### 🧩 1. Clone the repository
+
 git clone https://github.com/<your-username>/celebrato.git
+
 cd celebrato
 
 ### ⚙️ 2. Backend Setup
+
 cd backend
+
 npm install
 
 
 ### Generate Prisma client and apply migrations:
 
 npx prisma generate
+
 npx prisma migrate dev --name init
 
 
 ### Create local HTTPS certificates (only once):
 
 brew install mkcert
+
 mkcert -install
+
 mkcert localhost
+
 
 
 ### Start the backend server:
@@ -112,9 +120,13 @@ Open the local Apollo Sandbox:
 
 
 ## 🎨 3. Frontend Setup
+
 cd ../frontend
+
 npm install
+
 npm run dev
+
 
 
 Visit the app at:
