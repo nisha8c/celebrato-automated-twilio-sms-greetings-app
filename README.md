@@ -120,3 +120,91 @@ npm run dev
 Visit the app at:
 
 http://localhost:5173
+
+
+
+
+## 🔑 Authentication Flow
+
+### Register a user:
+
+```bash
+mutation {
+  register(
+    name: "Nisha"
+    email: "nisha@example.com"
+    password: "mypassword"
+    phoneNumber: "+911234567890"
+  )
+}
+```
+
+Copy the JWT token returned.
+
+Add it in your frontend’s localStorage or GraphQL header:
+
+Authorization: Bearer <your-token>
+
+
+### Use authenticated mutations (e.g., addMessageTemplate, addContact).
+
+## ⏰ Scheduler (Automatic Greetings)
+
+The backend runs a daily Node-Cron job via scheduler.ts, which:
+
+Checks today’s contacts’ birthdays or anniversaries.
+
+Fetches a matching message template.
+
+Sends SMS via Twilio.
+
+You can customize timing or recurrence inside scheduler.ts.
+
+🧪 Example GraphQL Operations
+### ➕ Add Message Template
+
+```bash
+mutation {
+  addMessageTemplate(
+    type: "birthday"
+    content: "🎉 Happy Birthday {{name}}! Wishing you all the happiness in the world."
+  ) {
+    id
+    type
+  }
+}
+```
+
+### 📜 Fetch All Templates
+
+```bash
+query {
+  messageTemplates {
+    id
+    type
+    content
+  }
+}
+```
+
+### 📱 Send Test Message
+```bash
+mutation {
+  sendTestMessage(phoneNumber: "+1234567890", type: "birthday")
+}
+```
+
+## 🧠 Developer Notes
+
+Ensure PostgreSQL is running before starting the backend.
+
+Use npx prisma studio to open the DB UI.
+
+HTTPS certs (.pem files) are local only — don’t commit them.
+
+All environment variables are stored in .env.
+
+Use npm run build && npm start to launch production mode.
+
+
+
