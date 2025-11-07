@@ -207,4 +207,8 @@ All environment variables are stored in .env.
 Use npm run build && npm start to launch production mode.
 
 
+# 💖 Author
+
+## Nisha Chavan
+🚀 Full-stack Developer | React | Node | GraphQL | Tailwind
 
