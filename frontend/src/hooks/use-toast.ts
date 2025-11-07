@@ -1,6 +1,5 @@
 import * as React from "react";
-import type {ToastProps} from "@radix-ui/react-toast";
-import type {ToastActionElement} from "../components/ui/toast.tsx";
+import type {ToastActionElement, ToastProps} from "../components/ui/toast.tsx";
 
 
 const TOAST_LIMIT = 1;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { gql } from "@apollo/client";
 import { useQuery, useMutation } from "@apollo/client/react";
-import type {Contact, MessageTemplate, ScheduledMessage} from "../types";
+import type {Contact, MessageTemplate, ScheduledMessage} from "@/types";
 import { Plus, Sparkles } from "lucide-react";
 import {useLocalStorage} from "../hooks/useLocalStorage.ts";
 import {useToast} from "../hooks/use-toast.ts";
