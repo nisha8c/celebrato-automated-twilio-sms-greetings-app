@@ -1,21 +1,58 @@
-import * as jwt from 'jsonwebtoken';
-import { Request, Response, NextFunction } from "express";
-import { prisma } from "./prisma";
+// src/auth.ts
+import type { Request, Response, NextFunction, RequestHandler } from "express";
+import jwt from "jsonwebtoken";
 
-const SECRET = process.env.JWT_SECRET!;
+interface JwtPayload {
+    userId: number; // 👈 this matches what we sign in generateToken
+}
 
-export const generateToken = (userId: number) => {
-    return jwt.sign({ userId }, SECRET, { expiresIn: "7d" });
-};
+/**
+ * Helper to create JWTs for register/login
+ */
+export function generateToken(userId: number): string {
+    const secret = process.env.JWT_SECRET || "supersecret";
 
-export const authMiddleware = async (req: any, res: Response, next: NextFunction) => {
-    const token = req.headers.authorization?.replace("Bearer ", "");
-    if (!token) return next();
-    try {
-        const decoded = jwt.verify(token, SECRET) as { userId: number };
-        req.user = await prisma.user.findUnique({ where: { id: decoded.userId } });
-    } catch {
-        req.user = null;
+    return jwt.sign(
+        { userId },   // 👈 payload field is userId
+        secret,
+        { expiresIn: "7d" }
+    );
+}
+
+/**
+ * Auth middleware: reads Authorization header,
+ * verifies JWT, attaches `user` to req.
+ */
+export const authMiddleware: RequestHandler = (
+    req: Request,
+    _res: Response,
+    next: NextFunction
+) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        return next();
     }
+
+    const [scheme, token] = authHeader.split(" ");
+
+    if (scheme !== "Bearer" || !token) {
+        return next();
+    }
+
+    try {
+        const secret = process.env.JWT_SECRET || "supersecret";
+        const decoded = jwt.verify(token, secret) as JwtPayload;
+
+        // Attach minimal user object (id only) to the request
+        (req as any).user = { id: decoded.userId };
+
+        // For debugging:
+        // console.log("Authenticated user:", (req as any).user);
+    } catch (err) {
+        console.error("JWT verification failed:", err);
+        // Don't throw – just continue without user
+    }
+
     next();
 };

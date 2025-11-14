@@ -4,7 +4,15 @@ import { prisma } from "../prisma";
 
 export const userResolver = {
     Query: {
-        me: (_: any, __: any, { user }: any) => user,
+        me: async (_: any, __: any, { user }: any) => {
+            // Not logged in
+            if (!user) return null;
+
+            // Load full user from DB so name/email/etc are present
+            return prisma.user.findUnique({
+                where: { id: user.id },
+            });
+        },
     },
     Mutation: {
         register: async (_: any, { name, email, password, phoneNumber }: any) => {

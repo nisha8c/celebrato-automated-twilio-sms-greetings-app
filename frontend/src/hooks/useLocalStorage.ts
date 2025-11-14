@@ -1,10 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 
-/**
- * A generic React hook to persist state in localStorage.
- * @param key The key under which the value is stored.
- * @param initialValue The default value if nothing is found in localStorage.
- */
 export function useLocalStorage<T>(key: string, initialValue: T) {
     const [storedValue, setStoredValue] = useState<T>(() => {
         try {
@@ -16,27 +11,21 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
         }
     });
 
-    const setValue = (value: T | ((val: T) => T)) => {
-        try {
-            const valueToStore =
-                value instanceof Function ? value(storedValue) : value;
-            setStoredValue(valueToStore);
-            window.localStorage.setItem(key, JSON.stringify(valueToStore));
-        } catch (error) {
-            console.error("Error setting localStorage key:", key, error);
-        }
-    };
-
-    // Optional: keep in sync across tabs
-    useEffect(() => {
-        const handleStorage = (event: StorageEvent) => {
-            if (event.key === key && event.newValue) {
-                setStoredValue(JSON.parse(event.newValue));
+    const setValue = useCallback(
+        (value: T | ((val: T) => T)) => {
+            try {
+                setStoredValue((prev) => {
+                    const valueToStore =
+                        value instanceof Function ? value(prev) : value;
+                    window.localStorage.setItem(key, JSON.stringify(valueToStore));
+                    return valueToStore;
+                });
+            } catch (error) {
+                console.error("Error setting localStorage key:", key, error);
             }
-        };
-        window.addEventListener("storage", handleStorage);
-        return () => window.removeEventListener("storage", handleStorage);
-    }, [key]);
+        },
+        [key]
+    );
 
     return [storedValue, setValue] as const;
 }

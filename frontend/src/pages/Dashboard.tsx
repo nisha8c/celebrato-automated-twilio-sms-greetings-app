@@ -149,12 +149,26 @@ const Dashboard = () => {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
+        const parseDate = (value?: string | null) => {
+            if (!value) return null;
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return null;
+            return d;
+        };
+
         const updated: ScheduledMessage[] = [];
+
         contacts.forEach((c) => {
-            if (c.birthday) {
-                const d = new Date(c.birthday);
-                const next = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+            // Birthday
+            const birthdayDate = parseDate(c.birthday);
+            if (birthdayDate) {
+                const next = new Date(
+                    today.getFullYear(),
+                    birthdayDate.getMonth(),
+                    birthdayDate.getDate()
+                );
                 if (next < today) next.setFullYear(today.getFullYear() + 1);
+
                 updated.push({
                     id: `${c.id}-birthday`,
                     contactId: c.id,
@@ -165,10 +179,17 @@ const Dashboard = () => {
                     templateId: "birthday",
                 });
             }
-            if (c.anniversary) {
-                const d = new Date(c.anniversary);
-                const next = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+
+            // Anniversary
+            const anniversaryDate = parseDate(c.anniversary);
+            if (anniversaryDate) {
+                const next = new Date(
+                    today.getFullYear(),
+                    anniversaryDate.getMonth(),
+                    anniversaryDate.getDate()
+                );
                 if (next < today) next.setFullYear(today.getFullYear() + 1);
+
                 updated.push({
                     id: `${c.id}-anniversary`,
                     contactId: c.id,
@@ -180,8 +201,10 @@ const Dashboard = () => {
                 });
             }
         });
+
         setScheduledMessages(updated);
-    }, [contacts]);
+    }, [contacts, setScheduledMessages]);
+
 
     // 🔹 Contact handlers
     const handleSaveContact = async (
