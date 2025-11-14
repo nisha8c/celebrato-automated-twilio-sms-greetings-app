@@ -5,10 +5,11 @@ import {
     DialogHeader,
     DialogTitle,
     DialogFooter,
+    DialogDescription,
 } from "./ui/dialog";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
-import type {Contact} from "../types";
+import type { Contact } from "../types";
 import { Button } from "./ui/button";
 
 interface ContactDialogProps {
@@ -16,6 +17,30 @@ interface ContactDialogProps {
     onOpenChange: (open: boolean) => void;
     onSave: (contact: Omit<Contact, "id"> & { id?: string }) => void;
     contact?: Contact;
+}
+
+// Helper: convert whatever we have into "YYYY-MM-DD" for <input type="date">
+function toInputDate(value: unknown): string {
+    if (!value) return "";
+
+    // If it's a number or a numeric string like "1763164800000"
+    if (typeof value === "number" || /^\d+$/.test(String(value))) {
+        const ts = typeof value === "number" ? value : Number(value);
+        const d = new Date(ts);
+        if (Number.isNaN(d.getTime())) return "";
+        return d.toISOString().slice(0, 10);
+    }
+
+    if (typeof value === "string") {
+        // Already yyyy-MM-dd?
+        if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
+
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return "";
+        return d.toISOString().slice(0, 10);
+    }
+
+    return "";
 }
 
 export function ContactDialog({
@@ -31,14 +56,14 @@ export function ContactDialog({
         anniversary: "",
     });
 
-    // 🧠 Populate form on edit
+    // Populate form on open / contact change
     useEffect(() => {
         if (contact) {
             setFormData({
                 name: contact.name,
                 phoneNumber: contact.phoneNumber,
-                birthday: contact.birthday || "",
-                anniversary: contact.anniversary || "",
+                birthday: toInputDate(contact.birthday),
+                anniversary: toInputDate(contact.anniversary),
             });
         } else {
             setFormData({
@@ -50,7 +75,6 @@ export function ContactDialog({
         }
     }, [contact, open]);
 
-    // 🧠 Form submission
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -71,6 +95,11 @@ export function ContactDialog({
                     <DialogTitle>
                         {contact ? "Edit Contact" : "Add New Contact"}
                     </DialogTitle>
+                    <DialogDescription>
+                        {contact
+                            ? "Update your contact details and save the changes."
+                            : "Fill in the details to add a new contact."}
+                    </DialogDescription>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">

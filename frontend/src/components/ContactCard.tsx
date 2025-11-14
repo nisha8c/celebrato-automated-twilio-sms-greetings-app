@@ -2,7 +2,7 @@ import { Card } from "./ui/card";
 import { Button } from "./ui/button.tsx";
 import { Calendar, Gift, Trash2, Edit } from "lucide-react";
 import { format } from "date-fns";
-import type {Contact} from "../types";
+import type { Contact } from "../types";
 
 interface ContactCardProps {
     contact: Contact;
@@ -10,15 +10,30 @@ interface ContactCardProps {
     onDelete: (id: string) => void;
 }
 
+// Safely parse & format any date-like value
+function formatDate(raw?: string | null): string | null {
+    if (!raw) return null;
+
+    let date: Date;
+
+    // If it's a numeric timestamp string like "1763164800000"
+    if (/^\d+$/.test(raw)) {
+        date = new Date(Number(raw));
+    } else {
+        // ISO string / "YYYY-MM-DD"
+        date = new Date(raw);
+    }
+
+    if (Number.isNaN(date.getTime())) {
+        return null;
+    }
+
+    return format(date, "MMM dd, yyyy");
+}
+
 export function ContactCard({ contact, onEdit, onDelete }: ContactCardProps) {
-    const formatDate = (date?: string) => {
-        if (!date) return null;
-        try {
-            return format(new Date(date), "MMM dd, yyyy");
-        } catch {
-            return "Invalid date";
-        }
-    };
+    const birthdayText = formatDate(contact.birthday);
+    const anniversaryText = formatDate(contact.anniversary);
 
     return (
         <Card className="glass-card shadow-card p-4 w-full hover:shadow-glow transition-all duration-300">
@@ -57,7 +72,7 @@ export function ContactCard({ contact, onEdit, onDelete }: ContactCardProps) {
 
                 {/* Dates */}
                 <div className="flex flex-col gap-2">
-                    {contact.birthday && (
+                    {birthdayText && (
                         <div className="flex items-center gap-2 text-xs sm:text-sm">
                             <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-celebration-pink/20 flex-shrink-0">
                                 <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-celebration-pink" />
@@ -65,13 +80,13 @@ export function ContactCard({ contact, onEdit, onDelete }: ContactCardProps) {
                             <div className="flex-1 min-w-0">
                                 <p className="text-xs text-muted-foreground">Birthday</p>
                                 <p className="font-medium text-foreground text-xs sm:text-sm">
-                                    {formatDate(contact.birthday)}
+                                    {birthdayText}
                                 </p>
                             </div>
                         </div>
                     )}
 
-                    {contact.anniversary && (
+                    {anniversaryText && (
                         <div className="flex items-center gap-2 text-xs sm:text-sm">
                             <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-celebration-purple/20 flex-shrink-0">
                                 <Gift className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-celebration-purple" />
@@ -79,13 +94,13 @@ export function ContactCard({ contact, onEdit, onDelete }: ContactCardProps) {
                             <div className="flex-1 min-w-0">
                                 <p className="text-xs text-muted-foreground">Anniversary</p>
                                 <p className="font-medium text-foreground text-xs sm:text-sm">
-                                    {formatDate(contact.anniversary)}
+                                    {anniversaryText}
                                 </p>
                             </div>
                         </div>
                     )}
 
-                    {!contact.birthday && !contact.anniversary && (
+                    {!birthdayText && !anniversaryText && (
                         <p className="text-xs text-muted-foreground italic">
                             No dates added yet
                         </p>
