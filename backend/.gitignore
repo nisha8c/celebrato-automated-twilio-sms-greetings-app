@@ -3,3 +3,7 @@ node_modules
 .env
 
 /generated/prisma
+
+# SSL Certificates (never commit!)
+cert/key.pem
+cert/cert.pem

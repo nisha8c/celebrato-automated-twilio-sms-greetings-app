@@ -189,10 +189,26 @@ const Dashboard = () => {
     ) => {
         try {
             if (contactData.id) {
-                await updateContact({ variables: contactData });
+                //await updateContact({ variables: contactData });
+                await updateContact({
+                    variables: {
+                        ...contactData,
+                        birthday: contactData.birthday ? new Date(contactData.birthday).toISOString() : null,
+                        anniversary: contactData.anniversary ? new Date(contactData.anniversary).toISOString() : null,
+                    }
+                });
+
                 toast({ title: "Contact updated successfully!" });
             } else {
-                await addContact({ variables: contactData });
+                //await addContact({ variables: contactData });
+                await addContact({
+                    variables: {
+                        ...contactData,
+                        birthday: contactData.birthday ? new Date(contactData.birthday).toISOString() : null,
+                        anniversary: contactData.anniversary ? new Date(contactData.anniversary).toISOString() : null,
+                    }
+                });
+
                 toast({ title: "Contact added successfully!" });
             }
             await refetchContacts();

@@ -19,17 +19,18 @@ model User {
 model Contact {
   id          Int       @id @default(autoincrement())
   userId      Int
-  user        User      @relation(fields: [userId], references: [id])
   name        String
   phoneNumber String
   birthday    DateTime?
   anniversary DateTime?
+  user        User      @relation(fields: [userId], references: [id])
 }
 
 model MessageTemplate {
-  id      Int    @id @default(autoincrement())
+  id      Int     @id @default(autoincrement())
   type    String
   content String
+  design  String? @default("confetti")
 }
 
 model ScheduledMessage {
