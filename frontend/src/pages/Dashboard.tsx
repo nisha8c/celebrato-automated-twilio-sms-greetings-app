@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { gql } from "@apollo/client";
 import { useQuery, useMutation } from "@apollo/client/react";
-import type {Contact, MessageTemplate, ScheduledMessage} from "@/types";
+import type { Contact, MessageTemplate, ScheduledMessage } from "@/types";
 import { Plus, Sparkles } from "lucide-react";
-import {useLocalStorage} from "../hooks/useLocalStorage.ts";
-import {useToast} from "../hooks/use-toast.ts";
-import {ContactCard} from "../components/ContactCard.tsx";
-import {UpcomingEvent} from "../components/UpcomingEvent.tsx";
-import {GreetingCard} from "../components/GreetingCard.tsx";
-import {ContactDialog} from "../components/ContactDialog.tsx";
-import {TemplateDialog} from "../components/TemplateDialog.tsx";
-import {Button} from "../components/ui/button.tsx";
+import { useLocalStorage } from "../hooks/useLocalStorage";
+import { useToast } from "../hooks/use-toast";
+import { ContactCard } from "../components/ContactCard";
+import { UpcomingEvent } from "../components/UpcomingEvent";
+import { GreetingCard } from "../components/GreetingCard";
+import { ContactDialog } from "../components/ContactDialog";
+import { TemplateDialog } from "../components/TemplateDialog";
+import { Button } from "../components/ui/button";
 
 interface GetContactsData {
     contacts: Contact[];
@@ -103,6 +103,71 @@ const UPDATE_TEMPLATE = gql`
   }
 `;
 
+/**
+ * Helper to build scheduled messages from contacts.
+ * This is used both when we first load contacts from the server,
+ * and whenever the local `contacts` state changes.
+ */
+function buildScheduledMessages(contacts: Contact[]): ScheduledMessage[] {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const parseDate = (value?: string | null) => {
+        if (!value) return null;
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return null;
+        return d;
+    };
+
+    const updated: ScheduledMessage[] = [];
+
+    contacts.forEach((c) => {
+        // Birthday
+        const birthdayDate = parseDate(c.birthday);
+        if (birthdayDate) {
+            const next = new Date(
+                today.getFullYear(),
+                birthdayDate.getMonth(),
+                birthdayDate.getDate()
+            );
+            if (next < today) next.setFullYear(today.getFullYear() + 1);
+
+            updated.push({
+                id: `${c.id}-birthday`,
+                contactId: c.id,
+                contactName: c.name,
+                scheduledDate: next.toISOString(),
+                type: "birthday",
+                status: "scheduled",
+                templateId: "birthday",
+            });
+        }
+
+        // Anniversary
+        const anniversaryDate = parseDate(c.anniversary);
+        if (anniversaryDate) {
+            const next = new Date(
+                today.getFullYear(),
+                anniversaryDate.getMonth(),
+                anniversaryDate.getDate()
+            );
+            if (next < today) next.setFullYear(today.getFullYear() + 1);
+
+            updated.push({
+                id: `${c.id}-anniversary`,
+                contactId: c.id,
+                contactName: c.name,
+                scheduledDate: next.toISOString(),
+                type: "anniversary",
+                status: "scheduled",
+                templateId: "anniversary",
+            });
+        }
+    });
+
+    return updated;
+}
+
 const Dashboard = () => {
     const { toast } = useToast();
 
@@ -128,8 +193,10 @@ const Dashboard = () => {
     >();
 
     // 🧠 Apollo queries
-    const { data: contactData, refetch: refetchContacts } = useQuery<GetContactsData>(GET_CONTACTS);
-    const { data: templateData, refetch: refetchTemplates } = useQuery<GetTemplatesData>(GET_TEMPLATES);
+    const { data: contactData, refetch: refetchContacts } =
+        useQuery<GetContactsData>(GET_CONTACTS);
+    const { data: templateData, refetch: refetchTemplates } =
+        useQuery<GetTemplatesData>(GET_TEMPLATES);
 
     // 🧠 Mutations
     const [addContact] = useMutation(ADD_CONTACT);
@@ -137,74 +204,29 @@ const Dashboard = () => {
     const [deleteContact] = useMutation(DELETE_CONTACT);
     const [updateTemplate] = useMutation(UPDATE_TEMPLATE);
 
-    // 🔹 Load data from server
+    // 🔹 When server data arrives: sync contacts/templates + build schedule
     useEffect(() => {
-        if (contactData?.contacts) setContacts(contactData.contacts);
-        if (templateData?.messageTemplates)
+        if (contactData?.contacts) {
+            setContacts(contactData.contacts);
+            const schedule = buildScheduledMessages(contactData.contacts);
+            setScheduledMessages(schedule);
+        }
+
+        if (templateData?.messageTemplates) {
             setTemplates(templateData.messageTemplates);
-    }, [contactData, templateData]);
+        }
+    }, [contactData, templateData, setContacts, setTemplates, setScheduledMessages]);
 
-    // 🔹 Auto-schedule messages
+    // 🔹 Also rebuild schedule whenever local `contacts` changes (e.g. after edits)
     useEffect(() => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        if (!contacts || contacts.length === 0) {
+            setScheduledMessages([]);
+            return;
+        }
 
-        const parseDate = (value?: string | null) => {
-            if (!value) return null;
-            const d = new Date(value);
-            if (Number.isNaN(d.getTime())) return null;
-            return d;
-        };
-
-        const updated: ScheduledMessage[] = [];
-
-        contacts.forEach((c) => {
-            // Birthday
-            const birthdayDate = parseDate(c.birthday);
-            if (birthdayDate) {
-                const next = new Date(
-                    today.getFullYear(),
-                    birthdayDate.getMonth(),
-                    birthdayDate.getDate()
-                );
-                if (next < today) next.setFullYear(today.getFullYear() + 1);
-
-                updated.push({
-                    id: `${c.id}-birthday`,
-                    contactId: c.id,
-                    contactName: c.name,
-                    scheduledDate: next.toISOString(),
-                    type: "birthday",
-                    status: "scheduled",
-                    templateId: "birthday",
-                });
-            }
-
-            // Anniversary
-            const anniversaryDate = parseDate(c.anniversary);
-            if (anniversaryDate) {
-                const next = new Date(
-                    today.getFullYear(),
-                    anniversaryDate.getMonth(),
-                    anniversaryDate.getDate()
-                );
-                if (next < today) next.setFullYear(today.getFullYear() + 1);
-
-                updated.push({
-                    id: `${c.id}-anniversary`,
-                    contactId: c.id,
-                    contactName: c.name,
-                    scheduledDate: next.toISOString(),
-                    type: "anniversary",
-                    status: "scheduled",
-                    templateId: "anniversary",
-                });
-            }
-        });
-
-        setScheduledMessages(updated);
+        const schedule = buildScheduledMessages(contacts);
+        setScheduledMessages(schedule);
     }, [contacts, setScheduledMessages]);
-
 
     // 🔹 Contact handlers
     const handleSaveContact = async (
@@ -212,28 +234,35 @@ const Dashboard = () => {
     ) => {
         try {
             if (contactData.id) {
-                //await updateContact({ variables: contactData });
                 await updateContact({
                     variables: {
                         ...contactData,
-                        birthday: contactData.birthday ? new Date(contactData.birthday).toISOString() : null,
-                        anniversary: contactData.anniversary ? new Date(contactData.anniversary).toISOString() : null,
-                    }
+                        birthday: contactData.birthday
+                            ? new Date(contactData.birthday).toISOString()
+                            : null,
+                        anniversary: contactData.anniversary
+                            ? new Date(contactData.anniversary).toISOString()
+                            : null,
+                    },
                 });
 
                 toast({ title: "Contact updated successfully!" });
             } else {
-                //await addContact({ variables: contactData });
                 await addContact({
                     variables: {
                         ...contactData,
-                        birthday: contactData.birthday ? new Date(contactData.birthday).toISOString() : null,
-                        anniversary: contactData.anniversary ? new Date(contactData.anniversary).toISOString() : null,
-                    }
+                        birthday: contactData.birthday
+                            ? new Date(contactData.birthday).toISOString()
+                            : null,
+                        anniversary: contactData.anniversary
+                            ? new Date(contactData.anniversary).toISOString()
+                            : null,
+                    },
                 });
 
                 toast({ title: "Contact added successfully!" });
             }
+
             await refetchContacts();
             setDialogOpen(false);
         } catch {
