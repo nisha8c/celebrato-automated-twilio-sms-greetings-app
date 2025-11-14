@@ -27,21 +27,35 @@ export const messageResolver = {
 
         updateMessageTemplate: async (
             _: any,
-            { id, content, design }: { id: number; content: string; design: string },
+            { id, content, design }: { id: string; content: string; design: string },
             { user }: any
         ) => {
             if (!user) throw new Error("Unauthorized");
 
+            const templateId = Number(id);
+            if (Number.isNaN(templateId)) {
+                throw new Error("Invalid template id");
+            }
+
             return prisma.messageTemplate.update({
-                where: { id },
+                where: { id: templateId },
                 data: { content, design },
             });
         },
 
-        deleteMessageTemplate: async (_: any, { id }: { id: number }, { user }: any) => {
+        deleteMessageTemplate: async (
+            _: any,
+            { id }: { id: string },
+            { user }: any
+        ) => {
             if (!user) throw new Error("Unauthorized");
 
-            await prisma.messageTemplate.delete({ where: { id } });
+            const templateId = Number(id);
+            if (Number.isNaN(templateId)) {
+                throw new Error("Invalid template id");
+            }
+
+            await prisma.messageTemplate.delete({ where: { id: templateId } });
             return true;
         },
 
@@ -52,7 +66,6 @@ export const messageResolver = {
         ) => {
             if (!user) throw new Error("Unauthorized");
 
-            // load templates for the given type
             const templates = await prisma.messageTemplate.findMany({
                 where: { type },
             });
@@ -61,7 +74,6 @@ export const messageResolver = {
                 throw new Error(`No templates found for type: ${type}`);
             }
 
-            // Pick a random template
             const chosen = templates[Math.floor(Math.random() * templates.length)];
 
             await sendSMS(phoneNumber, chosen.content);
