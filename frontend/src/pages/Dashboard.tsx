@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { gql } from "@apollo/client";
 import { useQuery, useMutation } from "@apollo/client/react";
 import type { Contact, MessageTemplate, ScheduledMessage } from "@/types";
@@ -104,9 +104,9 @@ const UPDATE_TEMPLATE = gql`
 `;
 
 /**
- * Helper to build scheduled messages from contacts.
- * This is used both when we first load contacts from the server,
- * and whenever the local `contacts` state changes.
+ * Build scheduled messages for ALL contacts.
+ * This is pure/derived: no side effects, just takes contacts and returns
+ * the next birthday/anniversary occurrences.
  */
 function buildScheduledMessages(contacts: Contact[]): ScheduledMessage[] {
     const today = new Date();
@@ -114,7 +114,16 @@ function buildScheduledMessages(contacts: Contact[]): ScheduledMessage[] {
 
     const parseDate = (value?: string | null) => {
         if (!value) return null;
-        const d = new Date(value);
+
+        let d: Date;
+
+        // If it's all digits, treat as a millisecond timestamp
+        if (/^\d+$/.test(value)) {
+            d = new Date(Number(value));
+        } else {
+            d = new Date(value);
+        }
+
         if (Number.isNaN(d.getTime())) return null;
         return d;
     };
@@ -130,7 +139,9 @@ function buildScheduledMessages(contacts: Contact[]): ScheduledMessage[] {
                 birthdayDate.getMonth(),
                 birthdayDate.getDate()
             );
-            if (next < today) next.setFullYear(today.getFullYear() + 1);
+            if (next < today) {
+                next.setFullYear(today.getFullYear() + 1);
+            }
 
             updated.push({
                 id: `${c.id}-birthday`,
@@ -151,7 +162,9 @@ function buildScheduledMessages(contacts: Contact[]): ScheduledMessage[] {
                 anniversaryDate.getMonth(),
                 anniversaryDate.getDate()
             );
-            if (next < today) next.setFullYear(today.getFullYear() + 1);
+            if (next < today) {
+                next.setFullYear(today.getFullYear() + 1);
+            }
 
             updated.push({
                 id: `${c.id}-anniversary`,
@@ -180,9 +193,6 @@ const Dashboard = () => {
         "celebration-templates",
         []
     );
-    const [scheduledMessages, setScheduledMessages] = useLocalStorage<
-        ScheduledMessage[]
-    >("celebration-scheduled", []);
 
     // 🔹 Dialogs
     const [dialogOpen, setDialogOpen] = useState(false);
@@ -204,62 +214,56 @@ const Dashboard = () => {
     const [deleteContact] = useMutation(DELETE_CONTACT);
     const [updateTemplate] = useMutation(UPDATE_TEMPLATE);
 
-    // 🔹 When server data arrives: sync contacts/templates + build schedule
+    // 🔹 Load data from server → into localStorage-backed state
     useEffect(() => {
         if (contactData?.contacts) {
             setContacts(contactData.contacts);
-            const schedule = buildScheduledMessages(contactData.contacts);
-            setScheduledMessages(schedule);
         }
 
         if (templateData?.messageTemplates) {
             setTemplates(templateData.messageTemplates);
         }
-    }, [contactData, templateData, setContacts, setTemplates, setScheduledMessages]);
+    }, [contactData, templateData, setContacts, setTemplates]);
 
-    // 🔹 Also rebuild schedule whenever local `contacts` changes (e.g. after edits)
-    useEffect(() => {
-        if (!contacts || contacts.length === 0) {
-            setScheduledMessages([]);
-            return;
-        }
+    // 🔹 Derived: build scheduled messages from current contacts
+    const scheduledMessages: ScheduledMessage[] = useMemo(
+        () => buildScheduledMessages(contacts),
+        [contacts]
+    );
 
-        const schedule = buildScheduledMessages(contacts);
-        setScheduledMessages(schedule);
-    }, [contacts, setScheduledMessages]);
+    const upcomingEvents = useMemo(
+        () =>
+            scheduledMessages
+                .filter((m) => m.status === "scheduled")
+                .sort(
+                    (a, b) =>
+                        new Date(a.scheduledDate).getTime() -
+                        new Date(b.scheduledDate).getTime()
+                )
+                .slice(0, 10),
+        [scheduledMessages]
+    );
 
     // 🔹 Contact handlers
     const handleSaveContact = async (
         contactData: Omit<Contact, "id"> & { id?: string }
     ) => {
         try {
-            if (contactData.id) {
-                await updateContact({
-                    variables: {
-                        ...contactData,
-                        birthday: contactData.birthday
-                            ? new Date(contactData.birthday).toISOString()
-                            : null,
-                        anniversary: contactData.anniversary
-                            ? new Date(contactData.anniversary).toISOString()
-                            : null,
-                    },
-                });
+            const variables = {
+                ...contactData,
+                birthday: contactData.birthday
+                    ? new Date(contactData.birthday).toISOString()
+                    : null,
+                anniversary: contactData.anniversary
+                    ? new Date(contactData.anniversary).toISOString()
+                    : null,
+            };
 
+            if (contactData.id) {
+                await updateContact({ variables });
                 toast({ title: "Contact updated successfully!" });
             } else {
-                await addContact({
-                    variables: {
-                        ...contactData,
-                        birthday: contactData.birthday
-                            ? new Date(contactData.birthday).toISOString()
-                            : null,
-                        anniversary: contactData.anniversary
-                            ? new Date(contactData.anniversary).toISOString()
-                            : null,
-                    },
-                });
-
+                await addContact({ variables });
                 toast({ title: "Contact added successfully!" });
             }
 
@@ -312,15 +316,6 @@ const Dashboard = () => {
         setEditingTemplate(template);
         setTemplateDialogOpen(true);
     };
-
-    const upcomingEvents = scheduledMessages
-        .filter((m) => m.status === "scheduled")
-        .sort(
-            (a, b) =>
-                new Date(a.scheduledDate).getTime() -
-                new Date(b.scheduledDate).getTime()
-        )
-        .slice(0, 10);
 
     return (
         <div className="min-h-screen bg-background">

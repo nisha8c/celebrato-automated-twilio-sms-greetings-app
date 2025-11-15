@@ -11,25 +11,20 @@ interface ContactCardProps {
 }
 
 // Safely parse & format any date-like value
-function formatDate(raw?: string | null): string | null {
-    if (!raw) return null;
+const formatDate = (date?: string | null) => {
+    if (!date) return null;
+    try {
+        const parsed =
+            /^\d+$/.test(date) ? new Date(Number(date)) : new Date(date);
 
-    let date: Date;
+        if (Number.isNaN(parsed.getTime())) return "Invalid date";
 
-    // If it's a numeric timestamp string like "1763164800000"
-    if (/^\d+$/.test(raw)) {
-        date = new Date(Number(raw));
-    } else {
-        // ISO string / "YYYY-MM-DD"
-        date = new Date(raw);
+        return format(parsed, "MMM dd, yyyy");
+    } catch {
+        return "Invalid date";
     }
+};
 
-    if (Number.isNaN(date.getTime())) {
-        return null;
-    }
-
-    return format(date, "MMM dd, yyyy");
-}
 
 export function ContactCard({ contact, onEdit, onDelete }: ContactCardProps) {
     const birthdayText = formatDate(contact.birthday);
