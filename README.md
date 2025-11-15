@@ -53,7 +53,7 @@ It features a modern glassmorphism-styled dashboard for managing templates, sche
 ## App screens:
 <img width="648" height="912" alt="scr1 08 58 30" src="https://github.com/user-attachments/assets/c7271074-e248-45cb-9001-2d2d8aea191b" />
 <img width="1333" height="704" alt="scr2" src="https://github.com/user-attachments/assets/9fcffaee-023f-46aa-98dd-a5004d9cd46a" />
-
+<img width="968" height="808" alt="up" src="https://github.com/user-attachments/assets/83eead4f-629d-4c5a-8988-c2a77acfc841" />
 
 ---
 
