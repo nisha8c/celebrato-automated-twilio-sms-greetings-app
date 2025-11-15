@@ -50,6 +50,12 @@ It features a modern glassmorphism-styled dashboard for managing templates, sche
 | **Lucide Icons** | Crisp vector icons |
 
 ---
+## App screens:
+<img width="648" height="912" alt="scr1 08 58 30" src="https://github.com/user-attachments/assets/c7271074-e248-45cb-9001-2d2d8aea191b" />
+<img width="1333" height="704" alt="scr2" src="https://github.com/user-attachments/assets/9fcffaee-023f-46aa-98dd-a5004d9cd46a" />
+
+
+---
 
 ## 🏗️ Project Structure
 
