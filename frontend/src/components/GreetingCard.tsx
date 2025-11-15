@@ -43,7 +43,7 @@ export function GreetingCard({
 
     return (
         <Card
-            className={`glass-card shadow-card p-3 sm:p-4 min-w-[240px] sm:min-w-[260px] flex-shrink-0 cursor-pointer transition-all duration-300 hover:shadow-glow ${
+            className={`glass-card shadow-card p-3 sm:p-4 w-[240px] sm:w-[260px] flex-shrink-0 cursor-pointer transition-all duration-300 hover:shadow-glow ${
                 selected ? "ring-2 ring-primary" : ""
             }`}
             onClick={onClick}
@@ -61,7 +61,7 @@ export function GreetingCard({
                     <h4 className="font-semibold text-xs sm:text-sm mb-1 sm:mb-2 capitalize text-foreground">
                         {template.type} — {template.design}
                     </h4>
-                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3">
+                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-3 break-words">
                         {template.content}
                     </p>
                 </div>
