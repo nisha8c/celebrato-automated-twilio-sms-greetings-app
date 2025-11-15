@@ -47,9 +47,9 @@ export function UpcomingEvent({ event }: UpcomingEventProps) {
                         } ${isToday ? "animate-pulse" : ""}`}
                     >
                         {event.type === "birthday" ? (
-                            <Calendar className="h-5 w-5 text-white" />
+                            <Calendar className="h-5 w-5 text-white stroke-[2.5] drop-shadow-md" />
                         ) : (
-                            <Gift className="h-5 w-5 text-white" />
+                            <Gift className="h-5 w-5 text-white stroke-[2.5] drop-shadow-md" />
                         )}
                     </div>
 
